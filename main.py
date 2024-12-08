@@ -3,13 +3,12 @@ import numpy as np
 import plotly.graph_objects as go
 
 def create_simple_cubic(size=1.0):
-    # Vertices
+    """Create Simple Cubic unit cell"""
     vertices = np.array([
         [0, 0, 0], [size, 0, 0], [size, size, 0], [0, size, 0],
         [0, 0, size], [size, 0, size], [size, size, size], [0, size, size]
     ])
     
-    # Edges
     edges = [
         [0, 1], [1, 2], [2, 3], [3, 0],  # bottom face
         [4, 5], [5, 6], [6, 7], [7, 4],  # top face
@@ -19,22 +18,50 @@ def create_simple_cubic(size=1.0):
     return vertices, edges
 
 def create_bcc(size=1.0):
-    # Get simple cubic vertices and edges
+    """Create Body-Centered Cubic unit cell"""
     vertices, edges = create_simple_cubic(size)
     
-    # Add center point
     center = np.array([[size/2, size/2, size/2]])
     vertices = np.vstack([vertices, center])
     
-    # Add edges from center to corners
     center_idx = len(vertices) - 1
     new_edges = [[center_idx, i] for i in range(8)]
     edges.extend(new_edges)
     
     return vertices, edges
 
+def create_fcc(size=1.0):
+    """Create Face-Centered Cubic unit cell"""
+    # Corner vertices
+    vertices = np.array([
+        [0, 0, 0], [size, 0, 0], [size, size, 0], [0, size, 0],
+        [0, 0, size], [size, 0, size], [size, size, size], [0, size, size]
+    ])
+    
+    # Face center vertices
+    face_centers = np.array([
+        [size/2, size/2, 0],    # bottom
+        [size/2, size/2, size], # top
+        [size/2, 0, size/2],    # front
+        [size/2, size, size/2], # back
+        [0, size/2, size/2],    # left
+        [size, size/2, size/2]  # right
+    ])
+    
+    vertices = np.vstack([vertices, face_centers])
+    
+    edges = []
+    # Connect face centers to corners
+    for i in range(8):
+        for j in range(8, 14):
+            dist = np.linalg.norm(vertices[i] - vertices[j])
+            if np.isclose(dist, size/np.sqrt(2)):
+                edges.append([i, j])
+    
+    return vertices, edges
+
 def create_octet(size=1.0):
-    # Factor for proper octahedron spacing
+    """Create Octet Truss unit cell"""
     f = size / 2.0
     
     vertices = np.array([
@@ -42,7 +69,7 @@ def create_octet(size=1.0):
         [0, 0, 0], [size, 0, 0], [size, size, 0], [0, size, 0],  # bottom
         [0, 0, size], [size, 0, size], [size, size, size], [0, size, size],  # top
         
-        # Octahedron center points
+        # Octahedron centers
         [f, f, 0],     # bottom center
         [f, f, size],  # top center
         [f, 0, f],     # front center
@@ -52,28 +79,112 @@ def create_octet(size=1.0):
         [f, f, f]      # middle center
     ])
     
-    # Create edges to form proper octahedron-tetrahedron pattern
     edges = [
         # Octahedron edges
-        [14, 8], [14, 9], [14, 10], [14, 11], [14, 12], [14, 13],  # center to face centers
+        [14, 8], [14, 9], [14, 10], [14, 11], [14, 12], [14, 13],
         
         # Tetrahedron edges
-        [0, 8], [1, 8], [2, 8], [3, 8],  # bottom pyramid
-        [4, 9], [5, 9], [6, 9], [7, 9],  # top pyramid
-        [0, 10], [1, 10], [4, 10], [5, 10],  # front pyramid
-        [2, 11], [3, 11], [6, 11], [7, 11],  # back pyramid
-        [0, 12], [3, 12], [4, 12], [7, 12],  # left pyramid
-        [1, 13], [2, 13], [5, 13], [6, 13]   # right pyramid
+        [0, 8], [1, 8], [2, 8], [3, 8],  # bottom
+        [4, 9], [5, 9], [6, 9], [7, 9],  # top
+        [0, 10], [1, 10], [4, 10], [5, 10],  # front
+        [2, 11], [3, 11], [6, 11], [7, 11],  # back
+        [0, 12], [3, 12], [4, 12], [7, 12],  # left
+        [1, 13], [2, 13], [5, 13], [6, 13]   # right
     ]
     
     return vertices, edges
 
+def create_diamond(size=1.0):
+    """Create Diamond unit cell"""
+    f = size/4
+    
+    vertices = np.array([
+        [0, 0, 0],
+        [size, size, 0],
+        [size, 0, size],
+        [0, size, size],
+        # Second tetrahedral group
+        [size/2, size/2, size/2],
+        [0, 0, size],
+        [size, 0, 0],
+        [0, size, 0],
+        [size, size, size]
+    ])
+    
+    edges = [
+        # First tetrahedron
+        [0, 1], [0, 2], [0, 3],
+        [1, 2], [2, 3], [3, 1],
+        # Second tetrahedron
+        [4, 5], [4, 6], [4, 7], [4, 8],
+        # Inter-tetrahedral connections
+        [0, 4], [1, 4], [2, 4], [3, 4]
+    ]
+    
+    return vertices, edges
+
+def create_tetrahedral(size=1.0):
+    """Create Tetrahedral unit cell"""
+    h = size * np.sqrt(3)/2
+    vertices = np.array([
+        [0, 0, 0],
+        [size, 0, 0],
+        [size/2, h, 0],
+        [size/2, h/3, h]
+    ])
+    
+    edges = [
+        [0, 1], [1, 2], [2, 0],  # base
+        [0, 3], [1, 3], [2, 3]   # to apex
+    ]
+    
+    return vertices, edges
+
+def create_kagome(size=1.0):
+    """Create Kagome lattice"""
+    f = size/2
+    
+    vertices = np.array([
+        # Base hexagon
+        [f, 0, 0], [f+f*np.cos(np.pi/3), f*np.sin(np.pi/3), 0],
+        [f+f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), 0],
+        [f, size, 0], [f-f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), 0],
+        [f-f*np.cos(np.pi/3), f*np.sin(np.pi/3), 0],
+        # Centers
+        [f, f, 0],
+        [f, f, size],
+        # Top hexagon
+        [f, 0, size], [f+f*np.cos(np.pi/3), f*np.sin(np.pi/3), size],
+        [f+f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), size],
+        [f, size, size], [f-f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), size],
+        [f-f*np.cos(np.pi/3), f*np.sin(np.pi/3), size]
+    ])
+    
+    edges = []
+    # Connect hexagon vertices
+    for i in range(6):
+        edges.append([i, (i+1)%6])
+        edges.append([i+8, ((i+1)%6)+8])
+    # Connect to centers
+    for i in range(6):
+        edges.append([i, 6])
+        edges.append([i+8, 7])
+    # Connect layers
+    for i in range(6):
+        edges.append([i, i+8])
+    
+    return vertices, edges
+
 def create_lattice(unit_cell_type, grid_size, cell_size=1.0):
-    # Get unit cell function
+    """Create complete lattice structure"""
     cell_functions = {
         'Simple Cubic': create_simple_cubic,
         'Body-Centered Cubic': create_bcc,
-        'Octet Truss': create_octet
+        'Face-Centered Cubic': create_fcc,
+        'Octet Truss': create_octet,
+        'Diamond': create_diamond,
+        'Tetrahedral': create_tetrahedral,
+        'Kagome': create_kagome
     }
     
     cell_func = cell_functions[unit_cell_type]
@@ -82,26 +193,20 @@ def create_lattice(unit_cell_type, grid_size, cell_size=1.0):
     all_edges = []
     vertex_count = 0
     
-    # Create grid of unit cells
     for x in range(grid_size):
         for y in range(grid_size):
             for z in range(grid_size):
-                # Get base unit cell
                 vertices, edges = cell_func(cell_size)
-                
-                # Translate vertices
                 translated_vertices = vertices + np.array([x, y, z]) * cell_size
                 all_vertices.extend(translated_vertices)
-                
-                # Update edges with new vertex indices
                 translated_edges = [[e[0] + vertex_count, e[1] + vertex_count] for e in edges]
                 all_edges.extend(translated_edges)
-                
                 vertex_count += len(vertices)
     
     return np.array(all_vertices), all_edges
 
 def calculate_strut_lengths(vertices, edges):
+    """Calculate lengths of all struts"""
     lengths = []
     for edge in edges:
         start, end = edge
@@ -111,7 +216,7 @@ def calculate_strut_lengths(vertices, edges):
     return np.array(lengths)
 
 def plot_lattice(vertices, edges, strut_thickness, colorscale='Viridis'):
-    # Create lines for edges
+    """Create interactive 3D plot"""
     x_lines = []
     y_lines = []
     z_lines = []
@@ -122,16 +227,14 @@ def plot_lattice(vertices, edges, strut_thickness, colorscale='Viridis'):
         y_lines.extend([vertices[start, 1], vertices[end, 1], None])
         z_lines.extend([vertices[start, 2], vertices[end, 2], None])
     
-    # Create color array based on position
     colors = np.zeros(len(x_lines))
     idx = 0
     for edge in edges:
         start, end = edge
         pos = vertices[start] + vertices[end]
-        colors[idx:idx+3] = np.sum(pos) % 8  # Create color variation
+        colors[idx:idx+3] = np.sum(pos) % 8
         idx += 3
     
-    # Create the 3D plot
     fig = go.Figure(data=[go.Scatter3d(
         x=x_lines,
         y=y_lines,
@@ -144,7 +247,6 @@ def plot_lattice(vertices, edges, strut_thickness, colorscale='Viridis'):
         )
     )])
     
-    # Update layout
     fig.update_layout(
         scene=dict(
             aspectmode='cube',
@@ -160,26 +262,31 @@ def plot_lattice(vertices, edges, strut_thickness, colorscale='Viridis'):
 
 # Streamlit app
 st.set_page_config(layout="wide", page_title="Lattice Structure Visualizer")
-st.title("Beam-based Lattice Structure Visualizer")
+st.title("Advanced Beam-based Lattice Structure Visualizer")
 
-# Create two columns for layout
+# Create two columns
 col1, col2 = st.columns([1, 3])
 
-# Sidebar controls
+# Control panel
 with col1:
     st.header("Settings")
     
     with st.expander("Unit Cell Settings", expanded=True):
         unit_cell = st.selectbox(
             "Select Unit Cell Type",
-            ["Simple Cubic", "Body-Centered Cubic", "Octet Truss"]
+            ["Simple Cubic", "Body-Centered Cubic", "Face-Centered Cubic", 
+             "Octet Truss", "Diamond", "Tetrahedral", "Kagome"]
         )
         
         st.write("""
         **Unit Cell Types:**
         - Simple Cubic: Basic cubic structure
         - Body-Centered Cubic: Added central node
+        - Face-Centered Cubic: Nodes at face centers
         - Octet Truss: Complex triangulated structure
+        - Diamond: Based on diamond crystal structure
+        - Tetrahedral: Basic tetrahedral arrangement
+        - Kagome: Hexagonal-prismatic structure
         """)
     
     with st.expander("Visualization Settings", expanded=True):
@@ -201,9 +308,7 @@ with col1:
             ['Viridis', 'Plasma', 'Inferno', 'Magma', 'Rainbow']
         )
     
-    # Add analysis section
     with st.expander("Structure Analysis", expanded=True):
-        # Generate lattice for analysis
         vertices, edges = create_lattice(unit_cell, grid_size)
         strut_lengths = calculate_strut_lengths(vertices, edges)
         
@@ -212,14 +317,12 @@ with col1:
         st.write(f"Average strut length: {strut_lengths.mean():.2f}")
         st.write(f"Strut length std dev: {strut_lengths.std():.2f}")
 
-# Main visualization area
+# Visualization area
 with col2:
-    # Generate and display lattice
     vertices, edges = create_lattice(unit_cell, grid_size)
     fig = plot_lattice(vertices, edges, strut_thickness, colorscale)
     st.plotly_chart(fig, use_container_width=True)
     
-    # Add instructions
     with st.expander("Instructions", expanded=False):
         st.markdown("""
         ### How to Use
@@ -243,4 +346,4 @@ with col2:
 
 # Footer
 st.markdown("---")
-st.markdown("Created for visualization of beam-based lattice structures")
+st.markdown("Created for visualization of advanced beam-based lattice structures")
