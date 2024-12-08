@@ -132,7 +132,7 @@ def plot_lattice(vertices, edges, strut_thickness):
     return fig
 
 # Streamlit app
-st.title("3D Lattice Structure Visualizer")
+st.title("Beam-based Lattice Structure Visualizer")
 
 # Sidebar controls
 with st.sidebar:
