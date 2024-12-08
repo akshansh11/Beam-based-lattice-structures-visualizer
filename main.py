@@ -8,21 +8,26 @@ def create_simple_cubic(size=1.0):
         [0, 0, 0], [size, 0, 0], [size, size, 0], [0, size, 0],
         [0, 0, size], [size, 0, size], [size, size, size], [0, size, size]
     ])
+    
     edges = [
         [0, 1], [1, 2], [2, 3], [3, 0],  # bottom face
         [4, 5], [5, 6], [6, 7], [7, 4],  # top face
         [0, 4], [1, 5], [2, 6], [3, 7]   # vertical edges
     ]
+    
     return vertices, edges
 
 def create_bcc(size=1.0):
     """Create Body-Centered Cubic unit cell"""
     vertices, edges = create_simple_cubic(size)
+    
     center = np.array([[size/2, size/2, size/2]])
     vertices = np.vstack([vertices, center])
+    
     center_idx = len(vertices) - 1
     new_edges = [[center_idx, i] for i in range(8)]
     edges.extend(new_edges)
+    
     return vertices, edges
 
 def create_fcc(size=1.0):
@@ -42,6 +47,7 @@ def create_fcc(size=1.0):
         [0, size/2, size/2],    # left
         [size, size/2, size/2]  # right
     ])
+    
     vertices = np.vstack([vertices, face_centers])
     
     edges = []
@@ -52,158 +58,39 @@ def create_fcc(size=1.0):
             if np.isclose(dist, size/np.sqrt(2)):
                 edges.append([i, j])
     
-    # Connect face centers to each other
-    face_pairs = [(8,10), (8,11), (8,12), (8,13), (9,10), (9,11), 
-                 (9,12), (9,13), (10,12), (10,13), (11,12), (11,13)]
-    edges.extend(face_pairs)
     return vertices, edges
 
 def create_octet(size=1.0):
     """Create Octet Truss unit cell"""
     f = size / 2.0
+    
     vertices = np.array([
         # Cube vertices
-        [0, 0, 0], [size, 0, 0], [size, size, 0], [0, size, 0],
-        [0, 0, size], [size, 0, size], [size, size, size], [0, size, size],
-        # Center points
-        [f, f, 0], [f, f, size],  # top/bottom
-        [f, 0, f], [f, size, f],  # front/back
-        [0, f, f], [size, f, f],  # left/right
-        [f, f, f]                 # middle
+        [0, 0, 0], [size, 0, 0], [size, size, 0], [0, size, 0],  # bottom
+        [0, 0, size], [size, 0, size], [size, size, size], [0, size, size],  # top
+        
+        # Octahedron centers
+        [f, f, 0],     # bottom center
+        [f, f, size],  # top center
+        [f, 0, f],     # front center
+        [f, size, f],  # back center
+        [0, f, f],     # left center
+        [size, f, f],  # right center
+        [f, f, f]      # middle center
     ])
     
     edges = [
-        # Center connections
+        # Octahedron edges
         [14, 8], [14, 9], [14, 10], [14, 11], [14, 12], [14, 13],
-        # Corner connections
+        
+        # Tetrahedron edges
         [0, 8], [1, 8], [2, 8], [3, 8],  # bottom
         [4, 9], [5, 9], [6, 9], [7, 9],  # top
         [0, 10], [1, 10], [4, 10], [5, 10],  # front
         [2, 11], [3, 11], [6, 11], [7, 11],  # back
         [0, 12], [3, 12], [4, 12], [7, 12],  # left
-        [1, 13], [2, 13], [5, 13], [6, 13],  # right
-        # Additional face center connections
-        [8, 10], [8, 11], [8, 12], [8, 13],
-        [9, 10], [9, 11], [9, 12], [9, 13]
+        [1, 13], [2, 13], [5, 13], [6, 13]   # right
     ]
-    return vertices, edges
-
-def create_tetrahedral_connected(size=1.0):
-    """Create Tetrahedral unit cell with proper inter-cell connectivity"""
-    h = size * np.sqrt(3)/2
-    vertices = np.array([
-        # Main tetrahedron
-        [0, 0, 0],              # base 1
-        [size, 0, 0],           # base 2
-        [size/2, h, 0],         # base 3
-        [size/2, h/3, h],       # apex
-        
-        # Connection vertices for adjacent cells
-        [size*3/2, h/3, h],     # right cell connection
-        [-size/2, h/3, h],      # left cell connection
-        [size/2, h*4/3, h],     # back cell connection
-        [size/2, -2*h/3, h],    # front cell connection
-        [size/2, h/3, 2*h],     # top cell connection
-        
-        # Additional vertices for face sharing
-        [size*3/2, h, 0],       # right face
-        [-size/2, h, 0],        # left face
-        [size/2, 2*h, 0],       # back face
-        [size/2, -h, 0],        # front face
-        
-        # Additional vertices for complete stacking
-        [0, 0, 2*h],            # top layer base 1
-        [size, 0, 2*h],         # top layer base 2
-        [size/2, h, 2*h]        # top layer base 3
-    ])
-    
-    edges = [
-        # Base tetrahedron
-        [0, 1], [1, 2], [2, 0],    # base triangle
-        [0, 3], [1, 3], [2, 3],    # edges to apex
-        
-        # Connections to adjacent cells
-        [1, 4], [2, 4],            # right cell
-        [0, 5], [2, 5],            # left cell
-        [2, 6], [3, 6],            # back cell
-        [0, 7], [1, 7],            # front cell
-        [3, 8],                    # top cell
-        
-        # Face sharing connections
-        [1, 9], [2, 9],            # right face
-        [0, 10], [2, 10],          # left face
-        [2, 11],                   # back face
-        [0, 12], [1, 12],          # front face
-        
-        # Top layer connections
-        [8, 13], [8, 14], [8, 15], # top triangle
-        [13, 14], [14, 15], [15, 13] # top layer edges
-    ]
-    return vertices, edges
-
-def create_kagome_connected(size=1.0):
-    """Create Kagome lattice with proper inter-cell connectivity"""
-    f = size/2
-    h = f * np.sqrt(3)
-    
-    vertices = np.array([
-        # Bottom layer hexagon
-        [f, 0, 0], [f+f*np.cos(np.pi/3), f*np.sin(np.pi/3), 0],
-        [f+f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), 0],
-        [f, h, 0], [f-f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), 0],
-        [f-f*np.cos(np.pi/3), f*np.sin(np.pi/3), 0],
-        
-        # Middle layer connecting points
-        [f, f/2, f/2], [f+f/2, f*np.sqrt(3)/4, f/2],
-        [f-f/2, f*np.sqrt(3)/4, f/2],
-        
-        # Top layer hexagon
-        [f, 0, size], [f+f*np.cos(np.pi/3), f*np.sin(np.pi/3), size],
-        [f+f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), size],
-        [f, h, size], [f-f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), size],
-        [f-f*np.cos(np.pi/3), f*np.sin(np.pi/3), size],
-        
-        # Adjacent cell connection points
-        [2*f, 0, 0], [2*f, h, 0],      # right
-        [0, 0, 0], [0, h, 0],          # left
-        [f, -h/2, 0], [f, 3*h/2, 0],   # bottom/top
-        [2*f, 0, size], [2*f, h, size], # right top layer
-        [0, 0, size], [0, h, size],     # left top layer
-        [f, -h/2, size], [f, 3*h/2, size] # bottom/top top layer
-    ])
-    
-    edges = []
-    # Bottom hexagon
-    for i in range(6):
-        edges.append([i, (i+1)%6])
-    
-    # Top hexagon
-    for i in range(6):
-        edges.append([i+9, ((i+1)%6)+9])
-    
-    # Vertical connections
-    for i in range(6):
-        edges.append([i, i+9])
-    
-    # Middle layer connections
-    for i in range(3):
-        edges.append([i*2, 6+i])
-        edges.append([i*2+1, 6+i])
-        edges.append([6+i, i*2+9])
-        edges.append([6+i, i*2+1+9])
-    
-    # Adjacent cell connections
-    edges.extend([
-        [1, 15], [2, 16],  # right side
-        [4, 17], [5, 18],  # left side
-        [0, 19], [5, 19],  # bottom
-        [2, 20], [3, 20],  # top
-        # Top layer connections
-        [10, 21], [11, 22],  # right
-        [13, 23], [14, 24],  # left
-        [9, 25], [14, 25],   # bottom
-        [11, 26], [12, 26]   # top
-    ])
     
     return vertices, edges
 
@@ -233,6 +120,58 @@ def create_diamond(size=1.0):
         # Inter-tetrahedral connections
         [0, 4], [1, 4], [2, 4], [3, 4]
     ]
+    
+    return vertices, edges
+
+def create_tetrahedral(size=1.0):
+    """Create Tetrahedral unit cell"""
+    h = size * np.sqrt(3)/2
+    vertices = np.array([
+        [0, 0, 0],
+        [size, 0, 0],
+        [size/2, h, 0],
+        [size/2, h/3, h]
+    ])
+    
+    edges = [
+        [0, 1], [1, 2], [2, 0],  # base
+        [0, 3], [1, 3], [2, 3]   # to apex
+    ]
+    
+    return vertices, edges
+
+def create_kagome(size=1.0):
+    """Create Kagome lattice"""
+    f = size/2
+    
+    vertices = np.array([
+        # Base hexagon
+        [f, 0, 0], [f+f*np.cos(np.pi/3), f*np.sin(np.pi/3), 0],
+        [f+f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), 0],
+        [f, size, 0], [f-f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), 0],
+        [f-f*np.cos(np.pi/3), f*np.sin(np.pi/3), 0],
+        # Centers
+        [f, f, 0],
+        [f, f, size],
+        # Top hexagon
+        [f, 0, size], [f+f*np.cos(np.pi/3), f*np.sin(np.pi/3), size],
+        [f+f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), size],
+        [f, size, size], [f-f*np.cos(2*np.pi/3), f*np.sin(2*np.pi/3), size],
+        [f-f*np.cos(np.pi/3), f*np.sin(np.pi/3), size]
+    ])
+    
+    edges = []
+    # Connect hexagon vertices
+    for i in range(6):
+        edges.append([i, (i+1)%6])
+        edges.append([i+8, ((i+1)%6)+8])
+    # Connect to centers
+    for i in range(6):
+        edges.append([i, 6])
+        edges.append([i+8, 7])
+    # Connect layers
+    for i in range(6):
+        edges.append([i, i+8])
     
     return vertices, edges
 
